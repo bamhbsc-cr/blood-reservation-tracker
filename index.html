@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blood Reservation Tracker</title>
+    
+    <link rel="icon" type="image/jpeg" href="https://raw.githubusercontent.com/bamhbsc-cr/Blood-Reservation/main/icon-192x192.jpg.jpeg">
+    <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/bamhbsc-cr/Blood-Reservation/main/icon-192x192.jpg.jpeg">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+        }
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+        .blood-drop {
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .table-row-hover {
+            transition: all 0.2s ease;
+        }
+        .table-row-hover:hover {
+            transform: translateX(4px);
+            box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.1);
+        }
+        @media (max-width: 640px) {
+            .mobile-card {
+                display: block !important;
+            }
+            .mobile-card td {
+                display: block;
+                text-align: right;
+                padding: 8px 12px;
+                border: none;
+            }
+            .mobile-card td:before {
+                content: attr(data-label);
+                float: left;
+                font-weight: 600;
+                color: #374151;
+            }
+            .hide-mobile-header {
+                display: none;
+            }
+        }
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .blood-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 700;
+            letter-spacing: 0.025em;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-2 sm:p-4 md:p-8">
+
+    <div id="login-page" class="min-h-screen flex items-center justify-center hidden">
+        <div id="login-container" class="max-w-md w-full mx-auto px-4">
+            <div class="glass-effect shadow-2xl rounded-3xl p-8 border border-red-100">
+                <div class="flex items-center justify-center mb-6">
+                    <img src="https://raw.githubusercontent.com/bamhbsc-cr/Blood-Reservation/main/icon-192x192.jpg.jpeg" alt="Logo" class="h-20 w-20 rounded-full blood-drop shadow-lg">
+                </div>
+                <h2 class="text-3xl font-bold text-center text-red-700 mb-2">Blood Reservation Tracker</h2>
+                <p class="text-center text-gray-600 mb-8 text-sm">Secure access to patient blood reservation data</p>
+                <form id="login-form">
+                    <div class="mb-5">
+                        <label for="email" class="block text-sm font-semibold text-gray-700 mb-2">Email Address</label>
+                        <input type="email" id="login_email" required class="mt-1 block w-full rounded-xl border-2 border-gray-200 shadow-sm p-3.5 focus:border-red-500 focus:ring-2 focus:ring-red-200 transition duration-200">
+                    </div>
+                    <div class="mb-6">
+                        <label for="password" class="block text-sm font-semibold text-gray-700 mb-2">Password</label>
+                        <input type="password" id="login_password" required class="mt-1 block w-full rounded-xl border-2 border-gray-200 shadow-sm p-3.5 focus:border-red-500 focus:ring-2 focus:ring-red-200 transition duration-200">
+                    </div>
+                    <button type="submit" id="login-btn" class="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold py-4 px-4 rounded-xl shadow-lg hover:shadow-xl transition duration-200 ease-in-out focus:outline-none focus:ring-4 focus:ring-red-300 transform hover:scale-[1.02]">
+                        Sign In Securely
+                    </button>
+                </form>
+                <div id="login-message" class="mt-5 text-center text-sm font-semibold text-red-600 hidden p-3 bg-red-50 rounded-lg"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="app-container" class="max-w-7xl mx-auto glass-effect shadow-2xl rounded-3xl p-4 sm:p-6 md:p-10 hidden border border-red-100">
+        <header class="mb-8 border-b-2 border-red-100 pb-6">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <img src="https://raw.githubusercontent.com/bamhbsc-cr/Blood-Reservation/main/icon-192x192.jpg.jpeg" alt="Blood Storage Centre Logo" class="h-12 w-12 sm:h-14 sm:w-14 rounded-full object-cover shadow-lg blood-drop">
+                    <div>
+                        <h1 class="text-2xl sm:text-3xl md:text-4xl font-extrabold text-red-700">
+                            Blood Reservation Tracker
+                        </h1>
+                        <p class="text-gray-600 mt-1 text-xs sm:text-sm font-medium">Real-time Patient Status & Unit Tracking</p>
+                    </div>
+                </div>
+            </div>
+            <div id="auth-status" class="mt-6"></div>
+        </header>
+
+        <div id="loading" class="text-center py-16 hidden"> 
+            <svg class="animate-spin h-12 w-12 text-red-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p class="mt-4 text-gray-700 font-semibold text-lg">Loading Application Data...</p>
+        </div>
+
+        <div id="content" class="hidden"> 
+
+            <section id="admin-panel" class="mb-10 p-6 sm:p-8 bg-gradient-to-br from-red-50 to-pink-50 border-2 border-red-200 rounded-2xl shadow-lg hidden">
+                 <h2 class="text-2xl sm:text-3xl font-bold text-red-700 mb-6 flex items-center gap-2">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    Admin: Add New Reservation
+                 </h2>
+                 <form id="add-reservation-form" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                     <div><label for="name" class="block text-sm font-semibold text-gray-700 mb-1">Patient Name</label><input type="text" id="name" required class="mt-1 block w-full rounded-xl border-2 border-gray-200 shadow-sm p-3 focus:border-red-500 focus:ring-2 focus:ring-red-200 transition duration-200"></div>
+                    <div><label for="cr_number" class="block text-sm font-semibold text-gray-700 mb-1">CR Number</label><input type="text" id="cr_number" required class="mt-1 block w-full rounded-xl border-2 border-gray-200 shadow-sm p-3 focus:border-red-500 focus:ring-2 focus:ring-red-200 transition duration-200"></div>
+                    <div><label for="blood_group" class="block text-sm font-semibold text-gray-700 mb-1">Blood Group</label><select id="blood_group" required class="mt-1 block w-full rounded-xl border-2 border-gray-200 shadow-sm p-3 focus:border-red-500 focus:ring-2 focus:ring-red-200 transition duration-200 appearance-none bg-white"><option value="">Select Group</option><option value="A POS">A POS</option><option value="A NEG">A NEG</option><option value="B POS">B POS</option><option value="B NEG">B NEG</option><option value="AB POS">AB POS</option><option value="AB NEG">AB NEG</option><option value="O POS">O POS</option><option value="O NEG">O NEG</option></select></div>
+                    <div><label for="unit_count" class="block text-sm font-semibold text-gray-700 mb-1">Units Reserved</label><input type="number" id="unit_count" required min="1" value="1" class="mt-1 block w-full rounded-xl border-2 border-gray-200 shadow-sm p-3 focus:border-red-500 focus:ring-2 focus:ring-red-200 transition duration-200"></div>
+                    <div><label for="age" class="block text-sm font-semibold text-gray-700 mb-1">Age</label><input type="number" id="age" required class="mt-1 block w-full rounded-xl border-2 border-gray-200 shadow-sm p-3 focus:border-red-500 focus:ring-2 focus:ring-red-200 transition duration-200"></div>
+                    <div><label for="sex" class="block text-sm font-semibold text-gray-700 mb-1">Sex</label><select id="sex" required class="mt-1 block w-full rounded-xl border-2 border-gray-200 shadow-sm p-3 focus:border-red-500 focus:ring-2 focus:ring-red-200 transition duration-200 appearance-none bg-white"><option value="">Select Sex</option><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select></div>
+                    <div><label for="ward" class="block text-sm font-semibold text-gray-700 mb-1">Ward</label><input type="text" id="ward" required class="mt-1 block w-full rounded-xl border-2 border-gray-200 shadow-sm p-3 focus:border-red-500 focus:ring-2 focus:ring-red-200 transition duration-200"></div>
+                    <div><label for="validity_date" class="block text-sm font-semibold text-gray-700 mb-1">Validity Date</label><input type="date" id="validity_date" required class="mt-1 block w-full rounded-xl border-2 border-gray-200 shadow-sm p-3 focus:border-red-500 focus:ring-2 focus:ring-red-200 transition duration-200"></div>
+                    <div class="lg:col-span-2"><label for="status" class="block text-sm font-semibold text-gray-700 mb-1">Reservation Status</label><select id="status" required class="mt-1 block w-full rounded-xl border-2 border-gray-200 shadow-sm p-3 focus:border-red-500 focus:ring-2 focus:ring-red-200 transition duration-200 appearance-none bg-white"><option value="Reserved">Reserved</option><option value="Pending">Pending</option><option value="Canceled">Canceled</option></select></div>
+                    <div class="sm:col-span-2 lg:col-span-4 pt-4"><button type="submit" id="submit-btn" class="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold py-4 px-4 rounded-xl shadow-lg hover:shadow-xl transition duration-200 focus:outline-none focus:ring-4 focus:ring-red-300 transform hover:scale-[1.01]">Add Reservation</button></div>
+                </form>
+                <div id="admin-message" class="mt-5 text-center text-sm font-semibold hidden p-3 rounded-lg"></div>
+            </section>
+            
+            <section id="doctor-panel">
+                <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                    <svg class="w-7 h-7 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                    Patient Status Tracker
+                </h2>
+                <div class="mb-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+                    <div class="relative flex-grow">
+                        <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        <input type="text" id="search-input" placeholder="Search by Patient Name or CR Number..." class="w-full pl-12 pr-4 rounded-xl border-2 border-gray-200 shadow-sm p-3.5 focus:border-red-500 focus:ring-2 focus:ring-red-200 transition duration-200">
+                    </div>
+                    <p id="record-count" class="text-sm font-semibold text-gray-600 bg-gray-100 px-4 py-3 rounded-xl whitespace-nowrap"></p>
+                </div>
+
+                <div id="reservations-table-container" class="overflow-x-auto shadow-xl rounded-2xl border-2 border-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gradient-to-r from-red-50 to-pink-50 hide-mobile-header">
+                            <tr>
+                                <th class="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Name/CR No.</th>
+                                <th class="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Ward</th>
+                                <th class="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Blood Group</th>
+                                <th class="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Reserved</th>
+                                <th class="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Issued</th>
+                                <th class="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Balance</th>
+                                <th class="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Valid Till</th>
+                                <th class="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Status</th>
+                                <th class="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider" id="edit-header">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reservations-body" class="bg-white divide-y divide-gray-100">
+                             <tr><td colspan="9" class="text-center py-8 text-gray-500">Loading data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+            
+            <section class="mt-12 pt-8 border-t-2 border-gray-200">
+                <p class="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Disclaimer:
+                </p>
+                <div id="disclaimer-display" class="text-sm text-gray-600 italic p-4 bg-gray-50 rounded-xl border border-gray-200 leading-relaxed">
+                    Loading disclaimer...
+                </div>
+                <button id="edit-disclaimer-btn" class="mt-3 text-xs text-red-600 font-semibold hover:text-red-800 hover:underline hidden flex items-center gap-1" onclick="openDisclaimerEditModal()">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                    Admin: Edit Disclaimer Text
+                </button>
+            </section>
+        </div>
+    </div>
+
+    <div id="edit-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden modal-overlay p-4">
+        <div class="glass-effect rounded-2xl shadow-2xl p-6 w-full max-w-2xl transform transition-all duration-300 scale-95 opacity-0 border border-red-100 max-h-[90vh] overflow-y-auto" id="edit-modal-content">
+             <h2 class="text-2xl sm:text-3xl font-bold text-red-700 mb-6 border-b-2 border-red-100 pb-3 flex items-center gap-2">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                Edit Reservation Details
+             </h2>
+             <form id="edit-reservation-form" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                 <input type="hidden" id="edit_doc_id">
+                <div><label class="block text-sm font-semibold text-gray-700 mb-1">Patient Name</label><p id="edit_name_display" class="mt-1 block w-full font-semibold p-3 text-gray-900 bg-gray-50 rounded-xl border-2 border-gray-200"></p></div>
+                <div><label class="block text-sm font-semibold text-gray-700 mb-1">CR Number</label><p id="edit_cr_number_display" class="mt-1 block w-full font-semibold p-3 text-gray-900 bg-gray-50 rounded-xl border-2 border-gray-200"></p></div>
+                <div><label for="edit_ward" class="block text-sm font-semibold text-gray-700 mb-1">Ward</label><input type="text" id="edit_ward" required class="mt-1 block w-full rounded-xl border-2 border-gray-200 shadow-sm p-3 focus:border-red-500 focus:ring-2 focus:ring-red-200 transition duration-200"></div>
+                <div><label for="edit_blood_group" class="block text-sm font-semibold text-gray-700 mb-1">Blood Group</label><select id="edit_blood_group" required class="mt-1 block w-full rounded-xl border-2 border-gray-200 shadow-sm p-3 focus:border-red-500 focus:ring-2 focus:ring-red-200 transition duration-200 appearance-none bg-white"><option value="A POS">A POS</option><option value="A NEG">A NEG</option><option value="B POS">B POS</option><option value="B NEG">B NEG</option><option value="AB POS">AB POS</option><option value="AB NEG">AB NEG</option><option value="O POS">O POS</option><option value="O NEG">O NEG</option></select></div>
+                <div><label for="edit_unit_count" class="block text-sm font-semibold text-gray-700 mb-1">Units Reserved</label><input type="number" id="edit_unit_count" required min="1" class="mt-1 block w-full rounded-xl border-2 border-gray-200 shadow-sm p-3 focus:border-red-500 focus:ring-2 focus:ring-red-200 transition duration-200"></div>
+                <div><label for="edit_units_issued" class="block text-sm font-semibold text-gray-700 mb-1">Units Issued</label><input type="number" id="edit_units_issued" required min="0" value="0" class="mt-1 block w-full rounded-xl border-2 border-gray-200 shadow-sm p-3 focus:border-red-500 focus:ring-2 focus:ring-red-200 transition duration-200"></div>
+                <div><label for="edit_validity_date" class="block text-sm font-semibold text-gray-700 mb-1">Validity Date</label><input type="date" id="edit_validity_date" required class="mt-1 block w-full rounded-xl border-2 border-gray-200 shadow-sm p-3 focus:border-red-500 focus:ring-2 focus:ring-red-200 transition duration-200"></div>
+                <div><label for="edit_status" class="block text-sm font-semibold text-gray-700 mb-1">Status</label><select id="edit_status" required class="mt-1 block w-full rounded-xl border-2 border-gray-200 shadow-sm p-3 focus:border-red-500 focus:ring-2 focus:ring-red-200 transition duration-200 appearance-none bg-white"><option value="Reserved">Reserved</option><option value="Issued">Issued</option><option value="Pending">Pending</option><option value="Canceled">Canceled</option></select></div>
+                <div class="sm:col-span-2 flex flex-col sm:flex-row justify-end gap-3 mt-6">
+                    <button type="button" onclick="closeEditModal()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-6 rounded-xl transition duration-200 order-2 sm:order-1">Cancel</button>
+                    <button type="submit" id="update-btn" class="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition duration-200 order-1 sm:order-2">Save Changes</button>
+                </div>
+            </form>
+            <div id="edit-message" class="mt-4 text-center text-sm font-semibold hidden p-3 rounded-lg"></div>
+        </div>
+    </div>
+    
+    <div id="disclaimer-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden modal-overlay p-4">
+        <div class="glass-effect rounded-2xl shadow-2xl p-6 w-full max-w-2xl transform transition-all duration-300 scale-95 opacity-0 border border-red-100" id="disclaimer-modal-content">
+             <h2 class="text-2xl sm:text-3xl font-bold text-red-700 mb-6 border-b-2 border-red-100 pb-3 flex items-center gap-2">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                Edit Application Disclaimer
+             </h2>
+             <form id="edit-disclaimer-form">
+                <textarea id="disclaimer-text-area" rows="8" required class="mt-1 block w-full rounded-xl border-2 border-gray-200 shadow-sm p-4 focus:border-red-500 focus:ring-2 focus:ring-red-200 transition duration-200" placeholder="Enter the official disclaimer text here..."></textarea>
+                
+                <div class="flex flex-col sm:flex-row justify-end gap-3 mt-6">
+                    <button type="button" onclick="closeDisclaimerEditModal()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-6 rounded-xl transition duration-200 order-2 sm:order-1">
+                        Cancel
+                    </button>
+                    <button type="submit" id="save-disclaimer-btn" class="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition duration-200 order-1 sm:order-2">
+                        Save Disclaimer
+                    </button>
+                </div>
+            </form>
+            <div id="disclaimer-message" class="mt-4 text-center text-sm font-semibold hidden p-3 rounded-lg"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const CUSTOM_FIREBASE_CONFIG = {
+             apiKey: "AIzaSyA-rDhYkHIMO9G97YsEwACF7tY1RZllrRg",
+             authDomain: "blood-reservation.firebaseapp.com",
+             projectId: "blood-reservation",
+             storageBucket: "blood-reservation.firebasestorage.app",
+             messagingSenderId: "797833087065",
+             appId: "1:797833087065:web:44638e369701b181e08948",
+             measurementId: "G-KZEVV5MMVS"
+           };
+        const appId = CUSTOM_FIREBASE_CONFIG.projectId; 
+        const firebaseConfig = CUSTOM_FIREBASE_CONFIG;
+        
+        let db, auth, userId = null;
+        let isAdminUser = false;
+        const COLLECTION_PATH = `/artifacts/${appId}/public/data/blood_reservations`;
+        const SETTINGS_DOC_PATH = `/artifacts/${appId}/public/data/app_settings/disclaimer`;
+
+        const ADMIN_UDS = [
+            "nbvMM9rkGdOvxV8uRi0xowtRA243" 
+        ];
+
+        // Utility Functions
+        function checkAdminStatus(uid) {
+             if (!uid) return false;
+             return ADMIN_UDS && ADMIN_UDS.length > 0 && ADMIN_UDS.includes(uid);
+         }
+
+        function formatDate(date) {
+             if (!date) return 'N/A';
+             const d = (date instanceof Date) ? date : (date.toDate ? date.toDate() : new Date(date));
+             if (isNaN(d.getTime())) return 'Invalid Date'; 
+            
+             const day = String(d.getDate()).padStart(2, '0');
+             const month = String(d.getMonth() + 1).padStart(2, '0');
+             const year = d.getFullYear();
+             return `${day}-${month}-${year}`;
+         }
+
+        function dateToInputString(date) {
+             if (!date) return '';
+             let d;
+             if (date instanceof Date) {
+                 d = date;
+             } else if (date && typeof date.toDate === 'function') { 
+                 d = date.toDate();
+             } else if (typeof date === 'string' && date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                 return date; 
+             } else {
+                 try {
+                     d = new Date(date); 
+                 } catch (e) {
+                     console.warn("Could not parse date:", date);
+                     return ''; 
+                 }
+             }
+
+             if (isNaN(d.getTime())) {
+                 console.warn("Invalid date object after parsing:", date);
+                 return ''; 
+             }
+
+             const year = d.getFullYear();
+             const month = String(d.getMonth() + 1).padStart(2, '0');
+             const day = String(d.getDate()).padStart(2, '0');
+             return `${year}-${month}-${day}`;
+         }
+
+        // Firebase Setup & Auth
+        async function setupFirebase() {
+            const loginPage = document.getElementById('login-page');
+            const loginMessage = document.getElementById('login-message');
+            const appContainer = document.getElementById('app-container');
+            const loadingSpinner = document.getElementById('loading');
+            const contentDiv = document.getElementById('content');
+
+             if (!loginPage || !appContainer || !loadingSpinner || !contentDiv) {
+                  console.error("CRITICAL ERROR: Essential page elements are missing!");
+                  document.body.innerHTML = '<p style="color: red; font-weight: bold; padding: 20px;">CRITICAL ERROR: Page structure is broken.</p>';
+                  return; 
+              }
+
+            try {
+                if (!firebaseConfig || !firebaseConfig.projectId || !firebaseConfig.apiKey || firebaseConfig.apiKey.includes("YOUR_API_KEY") || firebaseConfig.apiKey.length < 10) {
+                     const errorMsg = "🛑 Firebase Setup Error: Configuration object seems incomplete or invalid.";
+                     console.error(errorMsg, firebaseConfig); 
+                     loginPage.classList.remove('hidden');
+                     if(loginMessage) loginMessage.textContent = errorMsg;
+                      appContainer.classList.add('hidden'); 
+                     return;
+                 }
+                
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                const loginForm = document.getElementById('login-form');
+                 if(loginForm) {
+                     loginForm.addEventListener('submit', handleLogin);
+                 }
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        isAdminUser = checkAdminStatus(user.uid);
+
+                        loginPage.classList.add('hidden');
+                        appContainer.classList.remove('hidden');
+                        contentDiv.classList.remove('hidden'); 
+                        loadingSpinner.classList.remove('hidden'); 
+
+                        renderAppUI(isAdminUser, user.email || 'Logged In');
+                        setupDataListener();
+                        setupDisclaimerListener(); 
+
+                         const editForm = document.getElementById('edit-reservation-form');
+                         const disclaimerForm = document.getElementById('edit-disclaimer-form');
+                         const addForm = document.getElementById('add-reservation-form');
+
+                         if (isAdminUser && editForm && disclaimerForm && addForm && !editForm.dataset.listenerAttached) {
+                             editForm.addEventListener('submit', handleUpdateReservation);
+                             disclaimerForm.addEventListener('submit', handleSaveDisclaimer);
+                             addForm.addEventListener('submit', handleAddReservation);
+                             editForm.dataset.listenerAttached = 'true'; 
+                         }
+                    
+                    } else {
+                        userId = null;
+                        isAdminUser = false;
+                        
+                        loginPage.classList.remove('hidden'); 
+                        appContainer.classList.add('hidden');  
+                        loadingSpinner.classList.add('hidden'); 
+                        contentDiv.classList.add('hidden');     
+                        
+                        const editForm = document.getElementById('edit-reservation-form');
+                         if(editForm && editForm.dataset.listenerAttached) {
+                             delete editForm.dataset.listenerAttached; 
+                         }
+                         if(dataListenerUnsubscribe) {
+                              dataListenerUnsubscribe();
+                              dataListenerUnsubscribe = null;
+                         }
+                         if(disclaimerListenerUnsubscribe) {
+                              disclaimerListenerUnsubscribe();
+                              disclaimerListenerUnsubscribe = null;
+                         }
+
+                        const reservationsBody = document.getElementById('reservations-body');
+                        if (reservationsBody) {
+                             reservationsBody.innerHTML = '<tr><td colspan="9" class="text-center py-8 text-gray-500">Please log in to view data.</td></tr>';
+                        }
+                    }
+                });
+
+            } catch (error) {
+                console.error("Firebase Initialization Error:", error);
+                 loginPage.classList.remove('hidden');
+                 appContainer.classList.add('hidden'); 
+                 if(loginMessage) loginMessage.textContent = `Failed to initialize Firebase. (Error: ${error.message})`;
+            }
+        }
+
+        // Login Handler
+        async function handleLogin(e) {
+             e.preventDefault();
+             const emailInput = document.getElementById('login_email');
+             const passwordInput = document.getElementById('login_password');
+             const loginBtn = document.getElementById('login-btn');
+             const messageElement = document.getElementById('login-message');
+
+             if (!emailInput || !passwordInput || !loginBtn || !messageElement) return; 
+
+             const email = emailInput.value;
+             const password = passwordInput.value;
+            
+             loginBtn.disabled = true;
+             loginBtn.innerHTML = '<svg class="animate-spin h-5 w-5 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+             messageElement.classList.add('hidden');
+
+             try {
+                 await signInWithEmailAndPassword(auth, email, password);
+             } catch (error) {
+                 console.error("Login Error:", error.code, error.message); 
+                 let friendlyMessage = 'An error occurred during login.';
+                 if (error.code === 'auth/invalid-email') {
+                     friendlyMessage = '❌ Invalid email format.';
+                 } else if (error.code === 'auth/user-disabled') {
+                      friendlyMessage = '❌ This user account has been disabled.';
+                 } else if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                     friendlyMessage = '❌ Invalid email or password.';
+                 } else {
+                     friendlyMessage = `❌ Login failed. Please try again.`; 
+                 }
+                 messageElement.textContent = friendlyMessage;
+                 messageElement.classList.remove('hidden');
+             } finally {
+                 loginBtn.disabled = false;
+                 loginBtn.textContent = 'Sign In Securely';
+             }
+         }
+
+         // Sign Out Handler
+         async function handleSignOut() {
+             const signOutBtn = document.getElementById('sign-out-btn');
+             if (signOutBtn) signOutBtn.disabled = true; 
+
+             try {
+                 await signOut(auth);
+             } catch (error) {
+                 console.error("Sign Out Error:", error);
+                 alert("Error signing out. Please try again.");
+                 if (signOutBtn) signOutBtn.disabled = false; 
+             }
+         }
+
+        // UI Rendering
+        function renderAppUI(isAdmin, userEmail) {
+             const authStatusDiv = document.getElementById('auth-status');
+             if (!authStatusDiv) return;
+
+             const roleTag = isAdmin
+                 ? `<span class="inline-flex items-center rounded-full bg-gradient-to-r from-red-100 to-pink-100 px-4 py-2 text-sm font-bold text-red-700 shadow-sm">🩸 Admin/Blood Bank Staff</span>`
+                 : `<span class="inline-flex items-center rounded-full bg-gradient-to-r from-blue-100 to-indigo-100 px-4 py-2 text-sm font-bold text-blue-700 shadow-sm">👨‍⚕️ Doctor/Viewer</span>`;
+
+             authStatusDiv.innerHTML = `
+                 <div class="flex flex-col lg:flex-row justify-between lg:items-center gap-3 bg-gray-50 p-4 rounded-xl border border-gray-200">
+                     <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                         ${roleTag}
+                         <span class="text-gray-600 text-xs sm:text-sm font-medium">📧 ${userEmail}</span>
+                     </div>
+                     <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                         <code class="text-xs text-gray-600 bg-white px-3 py-2 rounded-lg border border-gray-200 break-all font-mono">ID: ${userId}</code> 
+                         <button id="sign-out-btn" class="text-sm font-bold text-white bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 px-4 py-2 rounded-lg transition duration-200 shadow-sm">
+                             Sign Out
+                         </button>
+                     </div>
+                 </div>
+                 ${!isAdmin ? '<div class="mt-3 text-xs text-orange-700 bg-orange-50 p-3 rounded-lg border border-orange-200 font-semibold">⚠️ NOTE: If you should have Admin access, please copy your User ID above and send it to the developer.</div>' : ''}
+             `;
+             
+             const signOutBtn = document.getElementById('sign-out-btn');
+             if (signOutBtn) {
+                 signOutBtn.removeEventListener('click', handleSignOut); 
+                 signOutBtn.addEventListener('click', handleSignOut);
+             }
+
+             const adminPanel = document.getElementById('admin-panel');
+             const editDisclaimerBtn = document.getElementById('edit-disclaimer-btn');
+             const editHeader = document.getElementById('edit-header');
+            
+             if (adminPanel && editDisclaimerBtn && editHeader) {
+                 if (isAdmin) {
+                     adminPanel.classList.remove('hidden');
+                     editHeader.textContent = 'EDIT';
+                     editDisclaimerBtn.classList.remove('hidden');
+                 } else {
+                     adminPanel.classList.add('hidden');
+                     editHeader.textContent = 'ACTION';
+                     editDisclaimerBtn.classList.add('hidden');
+                 }
+             }
+
+             const searchInput = document.getElementById('search-input');
+              if (searchInput && !searchInput.dataset.listenerAttached) {
+                  searchInput.addEventListener('input', filterTable);
+                  searchInput.dataset.listenerAttached = 'true';
+              }
+         }
+
+        // Disclaimer Logic
+        let disclaimerListenerUnsubscribe = null;
+        function setupDisclaimerListener() {
+             if (disclaimerListenerUnsubscribe) {
+                 disclaimerListenerUnsubscribe(); 
+             }
+            const docRef = doc(db, SETTINGS_DOC_PATH);
+            const disclaimerDisplay = document.getElementById('disclaimer-display');
+             if (!disclaimerDisplay) return;
+             
+            disclaimerListenerUnsubscribe = onSnapshot(docRef, (docSnapshot) => {
+                const data = docSnapshot.data();
+                let disclaimer = data?.text || "No disclaimer has been set by the Admin yet.";
+                disclaimerDisplay.innerHTML = disclaimer.replace(/\n/g, '<br>');
+            }, (error) => {
+                console.error("Error listening to disclaimer:", error);
+                disclaimerDisplay.textContent = "Error loading disclaimer.";
+            });
+        }
+        
+        window.openDisclaimerEditModal = function() {
+            const displayDiv = document.getElementById('disclaimer-display');
+            const textArea = document.getElementById('disclaimer-text-area');
+            const modal = document.getElementById('disclaimer-modal');
+            const content = document.getElementById('disclaimer-modal-content');
+            const messageEl = document.getElementById('disclaimer-message');
+            if(!displayDiv || !textArea || !modal || !content || !messageEl) return;
+
+            const currentText = displayDiv.innerHTML.replace(/<br\s*\/?>/gi, '\n'); 
+            const placeholderText = "No disclaimer has been set by the Admin yet.";
+            textArea.value = currentText.includes(placeholderText) ? "" : currentText;
+            
+            modal.classList.remove('hidden');
+            setTimeout(() => { content.classList.remove('scale-95', 'opacity-0'); }, 10); 
+            messageEl.classList.add('hidden');
+        }
+
+        window.closeDisclaimerEditModal = function() {
+            const modal = document.getElementById('disclaimer-modal');
+            const content = document.getElementById('disclaimer-modal-content');
+             if(!modal || !content) return;
+
+            content.classList.add('scale-95', 'opacity-0'); 
+            setTimeout(() => { modal.classList.add('hidden'); }, 300); 
+        }
+
+        async function handleSaveDisclaimer(e) {
+            e.preventDefault();
+            const textArea = document.getElementById('disclaimer-text-area');
+            const saveBtn = document.getElementById('save-disclaimer-btn');
+            const messageElement = document.getElementById('disclaimer-message');
+             if(!textArea || !saveBtn || !messageElement) return;
+
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving...';
+            messageElement.classList.remove('hidden', 'text-red-600', 'text-green-600');
+            messageElement.classList.add('text-blue-600');
+            messageElement.textContent = 'Processing update...';
+
+            const newText = textArea.value.trim();
+            
+            try {
+                const docRef = doc(db, SETTINGS_DOC_PATH);
+                await setDoc(docRef, { 
+                    text: newText,
+                    lastUpdated: serverTimestamp(),
+                    updatedBy: userId
+                });
+
+                messageElement.textContent = `✅ Disclaimer updated successfully!`;
+                messageElement.classList.remove('text-blue-600');
+                messageElement.classList.add('text-green-600', 'bg-green-50');
+                setTimeout(closeDisclaimerEditModal, 1500); 
+
+            } catch (error) {
+                console.error("Error saving disclaimer: ", error);
+                messageElement.textContent = `❌ Error: Could not save disclaimer. (${error.message})`;
+                messageElement.classList.remove('text-blue-600');
+                messageElement.classList.add('text-red-600', 'bg-red-50');
+                 saveBtn.disabled = false; 
+                 saveBtn.textContent = 'Save Disclaimer';
+            } 
+        }
+        
+        // Data Add Handler
+        async function handleAddReservation(e) {
+            e.preventDefault();
+            const form = e.target;
+            const submitBtn = document.getElementById('submit-btn');
+            const messageElement = document.getElementById('admin-message');
+             if (!form || !submitBtn || !messageElement) return; 
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<svg class="animate-spin h-5 w-5 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+            messageElement.classList.add('hidden');
+            
+            const name = form.elements['name'].value.trim();
+            const cr_number = form.elements['cr_number'].value.trim();
+            const blood_group = form.elements['blood_group'].value;
+            const units = parseInt(form.elements['unit_count'].value);
+            const ageVal = parseInt(form.elements['age'].value);
+            const sex = form.elements['sex'].value;
+            const ward = form.elements['ward'].value.trim();
+            const validity_date = form.elements['validity_date'].value; 
+            const status = form.elements['status'].value;
+
+            let valid = true;
+            let errorMsg = "❌ Error: ";
+
+             if (!name || !cr_number || !blood_group || !sex || !ward || !validity_date || !status) { 
+                 valid = false; 
+                 errorMsg += "Please fill in all required fields. "; 
+             }
+             if (isNaN(units) || units < 1) { 
+                 valid = false; 
+                 errorMsg += "Units Reserved must be at least 1. "; 
+             }
+             if (isNaN(ageVal) || ageVal < 0 || ageVal > 150) { 
+                 valid = false; 
+                 errorMsg += "Invalid Age provided. "; 
+             }
+             if (!validity_date.match(/^\d{4}-\d{2}-\d{2}$/)) { 
+                 valid = false; 
+                 errorMsg += "Invalid Validity Date format. "; 
+             }
+
+             if (!valid) {
+                  messageElement.textContent = errorMsg;
+                  messageElement.classList.remove('hidden', 'text-green-600', 'bg-green-50');
+                  messageElement.classList.add('text-red-600', 'bg-red-50');
+                  submitBtn.disabled = false;
+                  submitBtn.textContent = 'Add Reservation';
+                  return;
+              }
+
+            const reservationData = { 
+                name, 
+                age: ageVal, 
+                sex, 
+                ward, 
+                cr_number, 
+                blood_group, 
+                unit_count: units, 
+                units_issued: 0, 
+                validity_date, 
+                status, 
+                timestamp: serverTimestamp(), 
+                addedBy: userId 
+            };
+
+            try {
+                await addDoc(collection(db, COLLECTION_PATH), reservationData);
+                messageElement.textContent = `✅ Reservation added successfully!`;
+                messageElement.classList.remove('hidden', 'text-red-600', 'bg-red-50');
+                messageElement.classList.add('text-green-600', 'bg-green-50');
+                form.reset(); 
+                 document.getElementById('unit_count').value = 1; 
+                 document.getElementById('status').value = 'Reserved'; 
+                 document.getElementById('blood_group').value = '';
+                 document.getElementById('sex').value = '';
+
+            } catch (error) {
+                console.error("Error adding document: ", error);
+                messageElement.textContent = `❌ Error: Could not add reservation. (${error.message})`;
+                messageElement.classList.remove('hidden', 'text-green-600', 'bg-green-50');
+                messageElement.classList.add('text-red-600', 'bg-red-50');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Add Reservation';
+            }
+        }
+
+        // Data Update Handlers
+        window.openEditModal = function(docId, dataString) { 
+            const modal = document.getElementById('edit-modal');
+            const content = document.getElementById('edit-modal-content');
+            if(!modal || !content) return;
+
+             let currentData;
+             try {
+                 currentData = JSON.parse(JSON.parse(dataString)); 
+             } catch (e) {
+                 console.error("Failed to parse data for edit modal:", e);
+                 alert("Error opening edit form. Data format issue.");
+                 return;
+             }
+             
+            document.getElementById('edit_doc_id').value = docId;
+            document.getElementById('edit_name_display').textContent = currentData.name || 'N/A';
+            document.getElementById('edit_cr_number_display').textContent = currentData.cr_number || 'N/A';
+            document.getElementById('edit_ward').value = currentData.ward || '';
+            document.getElementById('edit_unit_count').value = currentData.unit_count || 1; 
+            document.getElementById('edit_units_issued').value = currentData.units_issued || 0; 
+            document.getElementById('edit_blood_group').value = currentData.blood_group || '';
+            document.getElementById('edit_status').value = currentData.status || 'Reserved';
+            document.getElementById('edit_validity_date').value = dateToInputString(currentData.validity_date) || ''; 
+            
+            document.getElementById('edit-message').classList.add('hidden');
+            const updateBtn = document.getElementById('update-btn');
+             if(updateBtn){
+                 updateBtn.textContent = 'Save Changes';
+                 updateBtn.disabled = false; 
+             }
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0'); 
+            }, 10);
+        }
+
+        window.closeEditModal = function() {
+            const modal = document.getElementById('edit-modal');
+            const content = document.getElementById('edit-modal-content');
+             if(!modal || !content) return;
+             
+            content.classList.add('scale-95', 'opacity-0'); 
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300); 
+        }
+
+        async function handleUpdateReservation(e) {
+            e.preventDefault();
+            const form = e.target;
+            const docId = form.elements['edit_doc_id'].value;
+            const updateBtn = document.getElementById('update-btn');
+            const messageElement = document.getElementById('edit-message');
+             if(!form || !updateBtn || !messageElement) return;
+
+            updateBtn.disabled = true;
+            updateBtn.textContent = 'Saving...';
+            messageElement.classList.remove('hidden', 'text-red-600', 'text-green-600', 'bg-red-50', 'bg-green-50'); 
+            messageElement.classList.add('text-blue-600', 'bg-blue-50');
+            messageElement.textContent = 'Processing update...';
+
+            const reservedUnits = parseInt(form.elements['edit_unit_count'].value);
+            const issuedUnits = parseInt(form.elements['edit_units_issued'].value);
+             let valid = true;
+             let errorMsg = "❌ Error: ";
+            
+             if (isNaN(reservedUnits) || reservedUnits < 1) { 
+                 valid = false; 
+                 errorMsg += "Units Reserved must be at least 1. "; 
+             }
+              if (isNaN(issuedUnits) || issuedUnits < 0) { 
+                  valid = false; 
+                  errorMsg += "Units Issued cannot be negative. "; 
+              }
+             if (!isNaN(reservedUnits) && !isNaN(issuedUnits) && issuedUnits > reservedUnits) { 
+                 valid = false; 
+                 errorMsg += `Units Issued (${issuedUnits}) cannot exceed Units Reserved (${reservedUnits}). `; 
+             }
+             
+             const ward = form.elements['edit_ward'].value.trim();
+             const bloodGroup = form.elements['edit_blood_group'].value;
+             const status = form.elements['edit_status'].value;
+             const validityDate = form.elements['edit_validity_date'].value; 
+
+             if (!ward || !bloodGroup || !status || !validityDate) { 
+                 valid = false; 
+                 errorMsg += "Please fill in Ward, Blood Group, Status, and Validity Date. "; 
+             }
+              if (!validityDate.match(/^\d{4}-\d{2}-\d{2}$/)) { 
+                  valid = false; 
+                  errorMsg += "Invalid Validity Date format. "; 
+              }
+
+              if (!valid) {
+                  messageElement.textContent = errorMsg;
+                  messageElement.classList.remove('text-blue-600', 'bg-blue-50');
+                  messageElement.classList.add('text-red-600', 'bg-red-50');
+                  updateBtn.disabled = false;
+                  updateBtn.textContent = 'Save Changes';
+                  return;
+              }
+
+            const updatedData = { 
+                ward, 
+                unit_count: reservedUnits, 
+                units_issued: issuedUnits, 
+                blood_group: bloodGroup, 
+                status, 
+                validity_date: validityDate, 
+                lastUpdated: serverTimestamp(), 
+                updatedBy: userId 
+            };
+
+            try {
+                const docRef = doc(db, COLLECTION_PATH, docId);
+                await updateDoc(docRef, updatedData);
+
+                messageElement.textContent = `✅ Details updated successfully!`;
+                messageElement.classList.remove('text-blue-600', 'bg-blue-50');
+                messageElement.classList.add('text-green-600', 'bg-green-50');
+                setTimeout(closeEditModal, 1500); 
+
+            } catch (error) {
+                console.error("Error updating document: ", error);
+                messageElement.textContent = `❌ Error: Could not save changes. (${error.message})`;
+                messageElement.classList.remove('text-blue-600', 'bg-blue-50');
+                messageElement.classList.add('text-red-600', 'bg-red-50');
+                 updateBtn.disabled = false; 
+                 updateBtn.textContent = 'Save Changes';
+            } 
+        }
+
+        // Data Read Listener
+        let allReservations = [];
+        let dataListenerUnsubscribe = null; 
+        
+        function setupDataListener() {
+            if (dataListenerUnsubscribe) {
+                dataListenerUnsubscribe(); 
+            }
+
+            const q = query(collection(db, COLLECTION_PATH));
+             const loadingSpinner = document.getElementById('loading');
+             if(loadingSpinner) loadingSpinner.classList.remove('hidden');
+
+            dataListenerUnsubscribe = onSnapshot(q, (snapshot) => {
+                const reservations = [];
+                const todayStr = dateToInputString(new Date()).split('-').join(''); 
+
+                snapshot.forEach((docSnapshot) => {
+                    const data = docSnapshot.data();
+                    const docId = docSnapshot.id;
+                    const docRef = doc(db, COLLECTION_PATH, docId);
+                    let skip = false; 
+
+                     if (isAdminUser && (data.status === 'Reserved' || data.status === 'Pending')) {
+                         const validityDateStr = data.validity_date ? data.validity_date.split('-').join('') : null; 
+                         if (validityDateStr && validityDateStr < todayStr) {
+                             updateDoc(docRef, { status: 'Canceled', lastUpdated: serverTimestamp() }).catch(err => console.error("Error auto-canceling:", err));
+                             data.status = 'Canceled'; 
+                             data.lastUpdated = new Date(); 
+                         }
+                     }
+                    
+                     if (isAdminUser && data.status === 'Canceled' && data.lastUpdated) {
+                         const fourDaysAgo = new Date(); 
+                         fourDaysAgo.setDate(fourDaysAgo.getDate() - 4);
+                          const lastUpdatedDate = data.lastUpdated.toDate ? data.lastUpdated.toDate() : new Date(data.lastUpdated); 
+                         if (!isNaN(lastUpdatedDate) && lastUpdatedDate < fourDaysAgo) {
+                             deleteDoc(docRef).catch(err => console.error("Error auto-deleting:", err));
+                             skip = true; 
+                         }
+                     }
+                    
+                    if (!skip) reservations.push({ id: docId, ...data });
+                });
+
+                reservations.sort((a, b) => {
+                     const timeA = a.timestamp?.toMillis ? a.timestamp.toMillis() : (a.timestamp ? new Date(a.timestamp).getTime() : 0);
+                     const timeB = b.timestamp?.toMillis ? b.timestamp.toMillis() : (b.timestamp ? new Date(b.timestamp).getTime() : 0);
+                     if (timeB === timeA) return (a.name || '').localeCompare(b.name || '');
+                    return timeB - timeA; 
+                });
+
+                allReservations = reservations;
+                filterTable(); 
+                
+                if(loadingSpinner) loadingSpinner.classList.add('hidden');
+
+            }, (error) => {
+                console.error("Error listening to collection:", error);
+                 const reservationsBody = document.getElementById('reservations-body');
+                 if(reservationsBody) reservationsBody.innerHTML = `<tr><td colspan="9" class="text-center py-8 text-red-500 font-semibold">❌ Error loading data. (Code: ${error.code})</td></tr>`;
+                if(loadingSpinner) loadingSpinner.classList.add('hidden');
+            });
+        }
+
+        // Filtering and Display
+        function filterTable() {
+            const searchInput = document.getElementById('search-input');
+             if (!searchInput) return; 
+            const searchTerm = searchInput.value.toLowerCase().trim();
+            const filteredReservations = allReservations.filter(r => 
+                (r.name && r.name.toLowerCase().includes(searchTerm)) || 
+                (r.cr_number && r.cr_number.toLowerCase().includes(searchTerm))
+            );
+            renderTable(filteredReservations);
+        }
+
+        function getStatusClass(status) {
+            const statusMap = {
+                'Reserved': 'bg-blue-100 text-blue-800 border border-blue-200',
+                'Pending': 'bg-yellow-100 text-yellow-800 border border-yellow-200',
+                'Canceled': 'bg-gray-100 text-gray-800 border border-gray-200',
+                'Issued': 'bg-green-100 text-green-800 border border-green-200'
+            };
+            return statusMap[status] || 'bg-gray-100 text-gray-800 border border-gray-200';
+        }
+
+        function getBloodGroupClass(group) {
+            const groupMap = {
+                'A POS': 'bg-red-100 text-red-800 border-2 border-red-300',
+                'A NEG': 'bg-red-50 text-red-700 border-2 border-red-200',
+                'B POS': 'bg-orange-100 text-orange-800 border-2 border-orange-300',
+                'B NEG': 'bg-orange-50 text-orange-700 border-2 border-orange-200',
+                'AB POS': 'bg-purple-100 text-purple-800 border-2 border-purple-300',
+                'AB NEG': 'bg-purple-50 text-purple-700 border-2 border-purple-200',
+                'O POS': 'bg-pink-100 text-pink-800 border-2 border-pink-300',
+                'O NEG': 'bg-pink-50 text-pink-700 border-2 border-pink-200'
+            };
+            return groupMap[group] || 'bg-gray-100 text-gray-800 border-2 border-gray-300';
+        }
+
+        function renderTable(reservations) {
+            const tbody = document.getElementById('reservations-body');
+            const recordCount = document.getElementById('record-count');
+            
+            if (!tbody) return;
+
+            if (reservations.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="9" class="text-center py-12 text-gray-500">
+                            <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            <p class="text-lg font-semibold">No reservations found</p>
+                            <p class="text-sm mt-1">Try adjusting your search criteria</p>
+                        </td>
+                    </tr>
+                `;
+                if (recordCount) recordCount.textContent = '0 Records';
+                return;
+            }
+
+            if (recordCount) {
+                recordCount.textContent = `${reservations.length} Record${reservations.length !== 1 ? 's' : ''}`;
+            }
+
+            tbody.innerHTML = reservations.map(r => {
+                const balance = (r.unit_count || 0) - (r.units_issued || 0);
+                const dataStr = JSON.stringify(JSON.stringify(r));
+                
+                const isExpiringSoon = () => {
+                    if (!r.validity_date || r.status === 'Canceled' || r.status === 'Issued') return false;
+                    const validityDate = new Date(r.validity_date);
+                    const tomorrow = new Date();
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    return validityDate <= tomorrow;
+                };
+
+                const expiringClass = isExpiringSoon() ? 'bg-yellow-50' : '';
+                
+                return `
+                    <tr class="table-row-hover ${expiringClass} mobile-card">
+                        <td data-label="Name/CR No." class="px-4 py-4">
+                            <div class="font-semibold text-gray-900">${r.name || 'N/A'}</div>
+                            <div class="text-xs text-gray-500 font-mono mt-1">CR: ${r.cr_number || 'N/A'}</div>
+                        </td>
+                        <td data-label="Ward" class="px-4 py-4">
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 text-sm font-semibold border border-indigo-200">
+                                ${r.ward || 'N/A'}
+                            </span>
+                        </td>
+                        <td data-label="Blood Group" class="px-4 py-4">
+                            <span class="blood-badge ${getBloodGroupClass(r.blood_group)}">
+                                ${r.blood_group || 'N/A'}
+                            </span>
+                        </td>
+                        <td data-label="Reserved" class="px-4 py-4">
+                            <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 text-blue-800 font-bold text-sm border-2 border-blue-300">
+                                ${r.unit_count || 0}
+                            </span>
+                        </td>
+                        <td data-label="Issued" class="px-4 py-4">
+                            <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-green-100 text-green-800 font-bold text-sm border-2 border-green-300">
+                                ${r.units_issued || 0}
+                            </span>
+                        </td>
+                        <td data-label="Balance" class="px-4 py-4">
+                            <span class="inline-flex items-center justify-center w-10 h-10 rounded-full ${balance > 0 ? 'bg-purple-100 text-purple-800 border-2 border-purple-300' : 'bg-gray-100 text-gray-600 border-2 border-gray-300'} font-bold text-sm">
+                                ${balance}
+                            </span>
+                        </td>
+                        <td data-label="Valid Till" class="px-4 py-4">
+                            <div class="flex flex-col">
+                                <span class="font-semibold text-gray-900">${formatDate(r.validity_date)}</span>
+                                ${isExpiringSoon() ? '<span class="text-xs text-yellow-700 font-bold mt-1">⚠️ EXPIRING SOON</span>' : ''}
+                            </div>
+                        </td>
+                        <td data-label="Status" class="px-4 py-4">
+                            <span class="status-badge ${getStatusClass(r.status)}">
+                                ${r.status === 'Reserved' ? '✓' : r.status === 'Pending' ? '⏳' : r.status === 'Issued' ? '✅' : '✗'}
+                                ${r.status || 'N/A'}
+                            </span>
+                        </td>
+                        <td data-label="Action" class="px-4 py-4">
+                            ${isAdminUser ? `
+                                <button onclick='openEditModal("${r.id}", ${dataStr})' 
+                                    class="inline-flex items-center gap-1 px-3 py-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-xs font-bold rounded-lg transition duration-200 shadow-sm hover:shadow-md">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                    </svg>
+                                    Edit
+                                </button>
+                            ` : `
+                                <span class="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-500 text-xs font-semibold rounded-lg border border-gray-200">
+                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                                    </svg>
+                                    View Only
+                                </span>
+                            `}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Application Start
+        window.onload = setupFirebase;
+
+    </script>
+</body>
+</html>
